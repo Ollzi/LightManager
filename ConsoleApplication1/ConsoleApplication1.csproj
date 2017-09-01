@@ -48,7 +48,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\WeatherService\WeatherData.Business\WeatherData.Business.csproj">
+    <ProjectReference Include="..\WeatherData.Business\WeatherData.Business.csproj">
       <Project>{b0b1155f-507e-4360-906d-f21ead62d947}</Project>
       <Name>WeatherData.Business</Name>
     </ProjectReference>

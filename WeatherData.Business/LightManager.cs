@@ -40,7 +40,7 @@ namespace WeatherData.Business
 
                 var timeLeft =_sunset.Value - DateTime.Now;
 
-                if (timeLeft.TotalMinutes <= 60 && DateTime.Now < _sunset)
+                if (timeLeft.TotalMinutes <= 40 && DateTime.Now < _sunset)
                 {
                     Console.WriteLine(string.Format("{0}: Skickar startsignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
                     var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--on lampor");
@@ -58,7 +58,7 @@ namespace WeatherData.Business
                 {
                     if (DateTime.Now.Hour >= 22)
                     {
-                        Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), _sunset.Value.ToString("HH:mm")));
+                        Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
                         var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off lampor");
                         processStartInfo.CreateNoWindow = true;
                         var process = Process.Start(processStartInfo);
@@ -72,17 +72,7 @@ namespace WeatherData.Business
                         _sunset = null;
                     }
                 }
-                else if (DateTime.Now.Hour >= 3) // During weekends
-                {
-                    Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
-                    var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off lampor");
-                    processStartInfo.CreateNoWindow = true;
-                    var process = Process.Start(processStartInfo);
-
-                    _currentState = "OFF";
-                    _sunset = null;
-                }
-
+                
                 //Always turn off bedroom lamps if time has passed 21:30
                 if (DateTime.Now.Hour >= 21 && DateTime.Now.Minute >= 30)
                 {
@@ -91,6 +81,17 @@ namespace WeatherData.Business
                     processStartInfo.CreateNoWindow = true;
                     var process = Process.Start(processStartInfo);
                 }
+            }
+
+            if (DateTime.Now.Hour >= 3 && DateTime.Now > _sunset.Value && DateTime.Now > new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59)) // Always shut down everything when the clock has passed 03:00
+            {
+                Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
+                var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off lampor");
+                processStartInfo.CreateNoWindow = true;
+                var process = Process.Start(processStartInfo);
+
+                _currentState = "OFF";
+                _sunset = null;
             }
         }
     }

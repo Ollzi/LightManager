@@ -42,8 +42,10 @@
     <Compile Include="Entities\WeatherData.cs">
       <DependentUpon>WeatherData.xsd</DependentUpon>
     </Compile>
+    <Compile Include="ITelldus.cs" />
     <Compile Include="LightManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TelldusManager.cs" />
     <Compile Include="WeatherProvider.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -11,8 +11,20 @@ namespace WeatherData.Business
 {
     public class LightManager
     {
+        private readonly ITelldus _telldus;
         private string _currentState = "OFF";
         private DateTime? _sunset;
+        private DateTime? _unitTestDateTime;
+
+        public LightManager()
+            :this(new TelldusManager())
+        {
+        }
+
+        public LightManager(ITelldus telldus)
+        {
+            _telldus = telldus;
+        }
 
         public void Run() 
         {
@@ -26,47 +38,38 @@ namespace WeatherData.Business
             timer.Start();
         }
 
-        private void timer_Elapsed(object sender, ElapsedEventArgs e)
+        public void timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (_currentState == "OFF") 
             {
-                if (!_sunset.HasValue || _sunset.Value.Date != DateTime.Now.Date)
+                if (!_sunset.HasValue || _sunset.Value.Date != DateTimeNow.Date)
                 {
                     _currentState = "OFF";
                     _sunset = WeatherProvider.GetSunsetTime();
 
-                    Console.WriteLine(string.Format("{0}: Solnedgång: {1}", DateTime.Now.ToString("yyyy-MM-dd"), _sunset.Value.ToString("HH:mm")));
+                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value:HH:mm}");
                 }
 
-                var timeLeft =_sunset.Value - DateTime.Now;
+                var timeLeft =_sunset.Value - DateTimeNow;
 
-                if (timeLeft.TotalMinutes <= 40 && DateTime.Now < _sunset)
+                if (timeLeft.TotalMinutes <= 40 && DateTimeNow < _sunset)
                 {
-                    Console.WriteLine(string.Format("{0}: Skickar startsignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
-                    var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--on lampor");
-                    processStartInfo.CreateNoWindow = true;
-                    
-                    var process = Process.Start(processStartInfo);
-                    
+                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till alla lampor {DateTimeNow:HH:mm}");
+                    _telldus.TurnOn("lampor");
                     _currentState = "ON";
                 }
             }
             else
             {
                 //During regular weekdays
-                if (DateTime.Now.DayOfWeek != DayOfWeek.Friday && DateTime.Now.DayOfWeek != DayOfWeek.Saturday)
+                if (DateTimeNow.DayOfWeek != DayOfWeek.Friday && DateTimeNow.DayOfWeek != DayOfWeek.Saturday)
                 {
-                    if (DateTime.Now.Hour >= 22)
+                    if (DateTimeNow.Hour >= 22)
                     {
-                        Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
-                        var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off lampor");
-                        processStartInfo.CreateNoWindow = true;
-                        var process = Process.Start(processStartInfo);
-                        process.WaitForExit();
+                        Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till alla lampor {DateTimeNow:HH:mm}");
 
-                        var hallwayProcessInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--on Hall");
-                        hallwayProcessInfo.CreateNoWindow = true;
-                        Process.Start(hallwayProcessInfo);
+                        _telldus.TurnOff("lampor");
+                        _telldus.TurnOn("Hall");
 
                         _currentState = "OFF";
                         _sunset = null;
@@ -74,24 +77,37 @@ namespace WeatherData.Business
                 }
                 
                 //Always turn off bedroom lamps if time has passed 21:30
-                if (DateTime.Now.Hour >= 21 && DateTime.Now.Minute >= 30)
+                if (DateTimeNow.Hour >= 21 && DateTimeNow.Minute >= 30)
                 {
-                    Console.WriteLine(string.Format("{0}: Skickar släcksignal till sovrummet {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
-                    var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off Sovrum");
-                    processStartInfo.CreateNoWindow = true;
-                    var process = Process.Start(processStartInfo);
+                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till sovrummet {DateTimeNow:HH:mm}");
+                    _telldus.TurnOff("Sovrum");
                 }
             }
 
-            if (DateTime.Now.Hour >= 3 && DateTime.Now > _sunset.Value && DateTime.Now > new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59)) // Always shut down everything when the clock has passed 03:00
+            if (DateTimeNow.Hour >= 3 && DateTimeNow > _sunset.Value && DateTimeNow > new DateTime(DateTimeNow.Year, DateTimeNow.Month, DateTimeNow.Day, 23, 59, 59)) // Always shut down everything when the clock has passed 03:00
             {
-                Console.WriteLine(string.Format("{0}: Skickar släcksignal till alla lampor {1}", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm")));
-                var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", "--off lampor");
-                processStartInfo.CreateNoWindow = true;
-                var process = Process.Start(processStartInfo);
+                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till alla lampor {DateTimeNow:HH:mm}");
+                _telldus.TurnOff("lampor");
 
                 _currentState = "OFF";
                 _sunset = null;
+            }
+        }
+
+        public DateTime DateTimeNow
+        {
+            get
+            {
+                if (_unitTestDateTime != null)
+                {
+                    return _unitTestDateTime.Value;
+                }
+
+                return DateTimeNow;
+            }
+            set
+            {
+                _unitTestDateTime = value;
             }
         }
     }

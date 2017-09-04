@@ -36,11 +36,17 @@ namespace WeatherData.Business
 
             timer.Elapsed += timer_Elapsed;
             timer.Start();
+            TimerElapsed();
         }
 
         public void timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (_currentState == "OFF") 
+            TimerElapsed();
+        }
+
+        public void TimerElapsed()
+        {
+            if (_currentState == "OFF")
             {
                 if (!_sunset.HasValue || _sunset.Value.Date != DateTimeNow.Date)
                 {
@@ -50,7 +56,7 @@ namespace WeatherData.Business
                     Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value:HH:mm}");
                 }
 
-                var timeLeft =_sunset.Value - DateTimeNow;
+                var timeLeft = _sunset.Value - DateTimeNow;
 
                 if (timeLeft.TotalMinutes <= 40 && DateTimeNow < _sunset)
                 {
@@ -75,7 +81,7 @@ namespace WeatherData.Business
                         _sunset = null;
                     }
                 }
-                
+
                 //Always turn off bedroom lamps if time has passed 21:30
                 if (DateTimeNow.Hour >= 21 && DateTimeNow.Minute >= 30)
                 {
@@ -84,7 +90,7 @@ namespace WeatherData.Business
                 }
             }
 
-            if (DateTimeNow.Hour >= 3 && DateTimeNow > _sunset.Value && DateTimeNow > new DateTime(DateTimeNow.Year, DateTimeNow.Month, DateTimeNow.Day, 23, 59, 59)) // Always shut down everything when the clock has passed 03:00
+            if (DateTimeNow.Hour >= 3 && DateTimeNow .Hour < 4) // Always shut down everything when the clock has passed 03:00
             {
                 Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till alla lampor {DateTimeNow:HH:mm}");
                 _telldus.TurnOff("lampor");

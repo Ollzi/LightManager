@@ -104,12 +104,12 @@ namespace WeatherData.Business
         {
             get
             {
-                if (_unitTestDateTime != null)
+                if (_unitTestDateTime.HasValue)
                 {
                     return _unitTestDateTime.Value;
                 }
 
-                return DateTimeNow;
+                return DateTime.Now;
             }
             set
             {

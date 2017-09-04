@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.4
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication1", "ConsoleApplication1\ConsoleApplication1.csproj", "{3743F34D-E42F-4FBA-849A-0085E6501BF3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightManager", "ConsoleApplication1\LightManager.csproj", "{3743F34D-E42F-4FBA-849A-0085E6501BF3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeatherData.Business", "WeatherData.Business\WeatherData.Business.csproj", "{B0B1155F-507E-4360-906D-F21EAD62D947}"
 EndProject

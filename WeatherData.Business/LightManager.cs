@@ -58,7 +58,7 @@ namespace WeatherData.Business
 
                 var timeLeft = _sunset.Value - DateTimeNow;
 
-                if (timeLeft.TotalMinutes <= 40 && DateTimeNow < _sunset)
+                if (timeLeft.TotalMinutes <= 50 && DateTimeNow < _sunset)
                 {
                     Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till alla lampor {DateTimeNow:HH:mm}");
                     _telldus.TurnOn("lampor");

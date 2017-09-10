@@ -11,8 +11,7 @@ namespace WeatherData.Business
                 CreateNoWindow = true
             };
 
-            var process = Process.Start(processStartInfo);
-            process?.WaitForExit();
+            RepeatProcess(10, processStartInfo);
         }
 
         public void TurnOn(string section)
@@ -22,8 +21,21 @@ namespace WeatherData.Business
                 CreateNoWindow = true
             };
 
-            var process = Process.Start(processStartInfo);
-            process?.WaitForExit();
+            RepeatProcess(10, processStartInfo);
+        }
+
+        private void RepeatProcess(int numberOfTimes, ProcessStartInfo processStartInfo)
+        {
+            int count = 0;
+
+            while(count <= numberOfTimes)
+            {
+                var process = Process.Start(processStartInfo);
+                process?.WaitForExit();
+
+                System.Threading.Thread.Sleep(100);
+                count++;
+            }
         }
     }
 }

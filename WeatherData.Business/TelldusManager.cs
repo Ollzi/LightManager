@@ -8,7 +8,8 @@ namespace WeatherData.Business
         {
             var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", $"--off {section}")
             {
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             };
 
             RepeatProcess(10, processStartInfo);
@@ -18,7 +19,8 @@ namespace WeatherData.Business
         {
             var processStartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Telldus\tdtool.exe", $"--on {section}")
             {
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             };
 
             RepeatProcess(10, processStartInfo);
@@ -33,7 +35,7 @@ namespace WeatherData.Business
                 var process = Process.Start(processStartInfo);
                 process?.WaitForExit();
 
-                System.Threading.Thread.Sleep(100);
+                System.Threading.Thread.Sleep(200);
                 count++;
             }
         }

@@ -1,29 +1,63 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 using System.Timers;
-using WeatherData.Business;
-using System.Diagnostics;
+using WeatherData.Business.Entities;
+using System.Linq;
 
 namespace WeatherData.Business
 {
     public class LightManager
     {
         private readonly ITelldus _telldus;
-        private string _currentState = "OFF";
+        private readonly IWeatherProvider _weatherProvider;
         private DateTime? _sunset;
         private DateTime? _unitTestDateTime;
+        private readonly Collection<LampSection> _sections;
 
         public LightManager()
-            :this(new TelldusManager())
+            :this(new TelldusManager(), new WeatherProvider())
         {
         }
 
-        public LightManager(ITelldus telldus)
+        public LightManager(ITelldus telldus, IWeatherProvider weatherProvider)
         {
             _telldus = telldus;
+            _weatherProvider = weatherProvider;
+            _sections = new Collection<LampSection>();
+            SetupSections();
+        }
+
+        private void SetupSections()
+        {
+            _sections.Add(new LampSection
+            {
+                SectionName = "lampor",
+                WeekdayStopTime = new TimeSpan(21, 40, 0),
+                WeekendStopTime = new TimeSpan(03, 00, 00),
+                SubSections = new Collection<string>
+                {
+                    "Hall",
+                    "Sovrum"
+                }
+            });
+
+            _sections.Add(new LampSection
+            {
+                SectionName = "Hall",
+                WeekdayStopTime = new TimeSpan(23, 00, 00),
+                WeekendStopTime = new TimeSpan(03, 00, 00),
+                WeekdayStartTime = new TimeSpan(21, 40, 00),
+                SubSections = new Collection<string>()
+            });
+
+            _sections.Add(new LampSection
+            {
+                SectionName = "Sovrum",
+                WeekdayStopTime = new TimeSpan(21, 25, 00),
+                SubSections = new Collection<string>()
+            });
+
+            
         }
 
         public void Run() 
@@ -46,58 +80,98 @@ namespace WeatherData.Business
 
         public void TimerElapsed()
         {
-            if (_currentState == "OFF")
+            if (!_sunset.HasValue || _sunset.Value.Date != DateTimeNow.Date && DateTimeNow.Hour > 10)
             {
-                if (!_sunset.HasValue || _sunset.Value.Date != DateTimeNow.Date)
+                _sunset = _weatherProvider.GetSunsetTime();
+                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value: yyyy-MM-dd HH:mm}");
+                _sections.ForEach(s => s.OnStateHandled = false);
+            }
+
+            var timeLeft = _sunset.Value - DateTimeNow;
+
+            if (_sections[0].State == State.Off && (timeLeft.TotalMinutes <= 50 && _sections[0].OnStateHandled == false))
+            {
+                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till alla lampor {DateTimeNow:HH:mm}");
+                _telldus.TurnOn("lampor");
+                _sections[0].State = State.On;
+                _sections[0].OnStateHandled = true;
+                _sections.ForEach(s => s.State = State.On);
+            }
+
+            if (IsWeekday())
+            {
+                foreach (var section in _sections)
                 {
-                    _currentState = "OFF";
-                    _sunset = WeatherProvider.GetSunsetTime();
+                    if (section.State == State.On)
+                    {
+                        TurnOffSectionIfTimePassed(section, section.WeekdayStopTime);
+                    }
 
-                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value:HH:mm}");
-                }
-
-                var timeLeft = _sunset.Value - DateTimeNow;
-
-                if (timeLeft.TotalMinutes <= 50 && DateTimeNow < _sunset)
-                {
-                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till alla lampor {DateTimeNow:HH:mm}");
-                    _telldus.TurnOn("lampor");
-                    _currentState = "ON";
+                    if (section.WeekdayStartTime.HasValue && section.State == State.Off && section.OnStateHandled == false)
+                    {
+                        TurnOnSectionIfTimeHasPassed(section, section.WeekdayStartTime.Value);
+                    }
                 }
             }
             else
             {
-                //During regular weekdays
-                if (DateTimeNow.DayOfWeek != DayOfWeek.Friday && DateTimeNow.DayOfWeek != DayOfWeek.Saturday)
+                // Always on weekends
+                foreach (var section in _sections)
                 {
-                    if (DateTimeNow.Hour >= 22)
+                    if (section.State == State.On)
                     {
-                        Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till alla lampor {DateTimeNow:HH:mm}");
+                        TurnOffSectionIfTimePassed(section, (section.WeekendStopTime ?? section.WeekdayStopTime));
+                    }
 
-                        _telldus.TurnOff("lampor");
-                        _telldus.TurnOn("Hall");
-
-                        _currentState = "OFF";
-                        _sunset = null;
+                    if (section.WeekdayStartTime.HasValue && section.State == State.Off)
+                    {
+                        TurnOnSectionIfTimeHasPassed(section, section.WeekdayStartTime.Value);
                     }
                 }
+            }
+        }
 
-                //Always turn off bedroom lamps if time has passed 21:30
-                if (DateTimeNow.Hour >= 21 && DateTimeNow.Minute >= 30)
+        private void TurnOffSectionIfTimePassed(LampSection section, TimeSpan stopTime)
+        {
+            var compareTime = CreateCompareDateTime(stopTime);
+            if (DateTimeNow > compareTime && section.State == State.On)
+            {
+                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar stoppsignal till {section.SectionName} {DateTimeNow:HH:mm}");
+                _telldus.TurnOff(section.SectionName);
+                section.State = State.Off;
+                if (section.SubSections.Count > 0)
                 {
-                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till sovrummet {DateTimeNow:HH:mm}");
-                    _telldus.TurnOff("Sovrum");
+                    section.SubSections.ForEach(s => _sections.First(x => s == x.SectionName).State = State.Off);
                 }
             }
+        }
 
-            if (DateTimeNow.Hour >= 3 && DateTimeNow .Hour < 4) // Always shut down everything when the clock has passed 03:00
+        private void TurnOnSectionIfTimeHasPassed(LampSection section, TimeSpan startTime)
+        {
+            var compareTime = CreateCompareDateTime(startTime);
+            if (DateTimeNow >= compareTime && section.State == State.Off)
             {
-                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar släcksignal till alla lampor {DateTimeNow:HH:mm}");
-                _telldus.TurnOff("lampor");
-
-                _currentState = "OFF";
-                _sunset = null;
+                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till {section.SectionName} {DateTimeNow:HH:mm}");
+                _telldus.TurnOn(section.SectionName);
+                section.State = State.On;
+                section.OnStateHandled = true;
             }
+        }
+
+        private DateTime CreateCompareDateTime(TimeSpan time)
+        {
+            DateTime compareDateTime;
+
+            if (DateTimeNow.Hour > time.Hours)
+            {
+                compareDateTime = new DateTime(DateTimeNow.Year, DateTimeNow.Month, (DateTimeNow.Day + 1), time.Hours, time.Minutes, 0);
+            }
+            else
+            {
+                compareDateTime = new DateTime(DateTimeNow.Year, DateTimeNow.Month, DateTimeNow.Day, time.Hours, time.Minutes, 0);
+            }
+
+            return compareDateTime;
         }
 
         public DateTime DateTimeNow
@@ -115,6 +189,11 @@ namespace WeatherData.Business
             {
                 _unitTestDateTime = value;
             }
+        }
+
+        private bool IsWeekday()
+        {
+            return DateTimeNow.DayOfWeek != DayOfWeek.Friday && DateTimeNow.DayOfWeek != DayOfWeek.Saturday;
         }
     }
 }

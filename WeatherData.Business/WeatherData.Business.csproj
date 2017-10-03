@@ -40,9 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Entities\LampSection.cs" />
-    <Compile Include="Entities\WeatherData.cs">
-      <DependentUpon>WeatherData.xsd</DependentUpon>
-    </Compile>
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="ITelldus.cs" />
     <Compile Include="LightManager.cs" />
@@ -50,11 +47,6 @@
     <Compile Include="State.cs" />
     <Compile Include="TelldusManager.cs" />
     <Compile Include="WeatherProvider.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Entities\WeatherData.xsd">
-      <SubType>Designer</SubType>
-    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

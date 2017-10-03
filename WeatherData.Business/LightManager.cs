@@ -96,6 +96,7 @@ namespace WeatherData.Business
                 _sections[0].State = State.On;
                 _sections[0].OnStateHandled = true;
                 _sections.ForEach(s => s.State = State.On);
+                return;
             }
 
             if (IsWeekday())

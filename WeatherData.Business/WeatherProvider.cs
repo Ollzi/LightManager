@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Xml.Serialization;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace WeatherData.Business
 {
@@ -22,11 +23,12 @@ namespace WeatherData.Business
 
             using (StreamReader reader = new StreamReader(response.GetResponseStream()))
             {
-                var serializer = new XmlSerializer(typeof(weatherdata));
+                XDocument doc = XDocument.Load(reader);
+                var sunNode = doc.Descendants("sun");
 
-                 var data = (weatherdata)serializer.Deserialize(reader);
+                var sunset = Convert.ToDateTime(sunNode.Attributes("set").First().Value);
 
-                 return data.sun.set;
+                return sunset;
             }
         }
     }

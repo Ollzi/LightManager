@@ -82,9 +82,17 @@ namespace WeatherData.Business
         {
             if (!_sunset.HasValue || _sunset.Value.Date != DateTimeNow.Date && DateTimeNow.Hour > 10)
             {
-                _sunset = _weatherProvider.GetSunsetTime();
-                Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value: yyyy-MM-dd HH:mm}");
-                _sections.ForEach(s => s.OnStateHandled = false);
+                try
+                {
+                    _sunset = _weatherProvider.GetSunsetTime();
+                    Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Solnedgång: {_sunset.Value: yyyy-MM-dd HH:mm}");
+                    _sections.ForEach(s => s.OnStateHandled = false);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Misslyckades att hämta tid för solnedgång: { ex.Message }");
+                }
+                
             }
 
             var timeLeft = _sunset.Value - DateTimeNow;

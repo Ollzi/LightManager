@@ -18,6 +18,7 @@ namespace WeatherData.Business
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://www.yr.no/place/Sweden/V%C3%A4sterbotten/Skellefte%C3%A5/forecast.xml");
             request.Method = "GET";
             request.Accept = "Accept=application/xml";
+            request.Timeout = 1000;
 
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 

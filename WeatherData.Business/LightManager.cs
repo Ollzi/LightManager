@@ -97,7 +97,7 @@ namespace WeatherData.Business
 
             var timeLeft = _sunset.Value - DateTimeNow;
 
-            if (_sections[0].State == State.Off && (timeLeft.TotalMinutes <= 50 && _sections[0].OnStateHandled == false))
+            if (_sections[0].State == State.Off && (timeLeft.TotalMinutes <= 60 && _sections[0].OnStateHandled == false))
             {
                 Console.WriteLine($"{DateTimeNow:yyyy-MM-dd}: Skickar startsignal till alla lampor {DateTimeNow:HH:mm}");
                 _telldus.TurnOn("lampor");
